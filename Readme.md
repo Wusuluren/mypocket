@@ -1,0 +1,2 @@
+# mypocket
+a chrome plugin
