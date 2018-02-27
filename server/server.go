@@ -7,6 +7,7 @@ import (
 	"github.com/wusuluren/mypocket/server/storage"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 type BookmarkNode struct {
@@ -16,13 +17,15 @@ type BookmarkNode struct {
 	Url    string
 }
 
-var (
-	pUser     = flag.String("user", "", "user name")
-	pPasswd   = flag.String("passwd", "", "password")
-	pFilepath = flag.String("filepath", "", "filepath")
-)
+type Config struct {
+	User     string
+	Passwd   string
+	Filepath string
+	Port     int
+}
 
 var strg storage.Storage
+var config Config
 
 func processBookmark(pWriter *http.ResponseWriter, pRequest **http.Request, processFunc func(node BookmarkNode)) {
 	writer := *pWriter
@@ -42,13 +45,13 @@ func processBookmark(pWriter *http.ResponseWriter, pRequest **http.Request, proc
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if *pUser != node.User {
+	if config.User != node.User {
 		fmt.Println("bad user")
 		writer.WriteHeader(http.StatusForbidden)
 		writer.Write([]byte("bad user"))
 		return
 	}
-	if *pPasswd != node.Passwd {
+	if config.Passwd != node.Passwd {
 		fmt.Println("bad passwd")
 		writer.WriteHeader(http.StatusForbidden)
 		writer.Write([]byte("bad passwd"))
@@ -78,17 +81,51 @@ func removeBookmark(writer http.ResponseWriter, request *http.Request) {
 	})
 }
 
+func usage() {
+	fmt.Println(`usage:
+	server -config=[config file]
+config file like this:
+{
+  "user": "root",
+  "passwd": "toor",
+  "filepath": "test.md",
+  "port": 8000
+}`)
+	os.Exit(0)
+}
+
 func main() {
+	var err error
+	pConfig := flag.String("config", "", "config file")
 	flag.Parse()
-	strg = storage.NewStorage(storage.MarkdownId, map[string]string{
-		"filepath": *pFilepath,
+	if *pConfig != "" {
+		bytes, err := ioutil.ReadFile(*pConfig)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(bytes, &config)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		usage()
+	}
+	if config.Port == 0 {
+		config.Port = 8000
+	}
+	fmt.Println(config.User, config.Passwd, config.Filepath)
+	strg, err = storage.NewStorage(storage.MarkdownId, map[string]string{
+		"filepath": config.Filepath,
 	})
+	if err != nil {
+		panic(err)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/add", addBookmark)
 	mux.HandleFunc("/del", removeBookmark)
 	fmt.Println("server is running...")
-	fmt.Println(*pUser, *pPasswd, *pFilepath)
-	if err := http.ListenAndServe("0.0.0.0:8000", mux); err != nil {
+	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", config.Port), mux)
+	if err != nil {
 		panic(err)
 	}
 }

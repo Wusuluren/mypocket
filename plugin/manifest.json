@@ -13,9 +13,11 @@
     "storage"
   ],
   "icons": {
-    "16": "icon.png"
+    "16": "icon.png",
+    "32": "icon.png",
+    "64": "icon.png"
   },
   "background": {
-    "scripts":["pocket.js"]
+    "scripts":["background.js"]
   }
 }

@@ -15,11 +15,12 @@ const (
 	MarkdownId = iota
 )
 
-func NewStorage(id int, config map[string]string) Storage {
+func NewStorage(id int, config map[string]string) (Storage, error) {
 	var strg Storage
+	var err error
 	switch id {
 	case MarkdownId:
-		strg = newMarkdown(config)
+		strg, err = newMarkdown(config)
 	}
-	return strg
+	return strg, err
 }

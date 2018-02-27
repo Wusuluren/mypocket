@@ -13,91 +13,92 @@ type markdown struct {
 	treeRoot *gquery.MarkdownNode
 }
 
-func (md *markdown) Load() {
-
-}
-
-func saveNodetreeToFile(file *os.File, node *gquery.MarkdownNode) {
-	str := node.RawText + "\n"
-	for _, v := range node.Value {
-		str += (v + "\n")
-	}
-	_, err := file.WriteString(str)
+func (md *markdown) Load() error {
+	file, err := os.Open(md.filepath)
 	if err != nil {
-		fmt.Println(err)
-	}
-	for _, child := range node.Children(gquery.MdNone) {
-		saveNodetreeToFile(file, child)
-	}
-}
-
-func (md *markdown) Save() {
-	file, err := os.OpenFile(md.filepath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-	if err != nil {
-		fmt.Println(err)
-		return
+		file, err = os.Create(md.filepath)
+		if err != nil {
+			return err
+		}
 	}
 	defer file.Close()
-	saveNodetreeToFile(file, md.treeRoot)
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	md.treeRoot = gquery.ParseMarkdown(string(bytes))
+	return nil
+}
+
+func (md *markdown) Save() error {
+	file, err := os.OpenFile(md.filepath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	for _, node := range md.treeRoot.Children(gquery.MdUnorderList) {
+		_, err := file.WriteString(fmt.Sprintf("- %s\n", node.Text))
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	return nil
 }
 
 func (md *markdown) Add(items ...Item) {
+	needSave := false
 	for _, item := range items {
 		isFind := false
 		for _, node := range md.treeRoot.Children(gquery.MdUnorderList) {
-			if item.Title == node.Text {
-				//update
-				if len(node.Value) > 0 {
-					node.Value[0] = item.Url
-				}
+			if fmt.Sprintf("[%s](%s)", item.Title, item.Url) == node.Text {
 				isFind = true
 				break
 			}
 		}
 		if !isFind {
-			//add
 			md.treeRoot.Append(&gquery.MarkdownNode{
-				Type:    gquery.MdUnorderList,
-				Text:    item.Title,
-				RawText: "- " + item.Title,
-				Value:   []string{item.Url},
+				Type: gquery.MdUnorderList,
+				Text: fmt.Sprintf("[%s](%s)", item.Title, item.Url),
 				Attribute: map[string]string{
 					"tags": strings.Join(item.Tags, ";"),
 				},
 			})
+			needSave = true
 		}
 	}
-	md.Save()
+	if needSave {
+		if err := md.Save(); err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
 func (md *markdown) Del(items ...Item) {
+	needSave := false
 	for _, item := range items {
 		list := md.treeRoot.Children(gquery.MdUnorderList)
 		for _, node := range list {
-			if item.Title == node.Text {
+			if fmt.Sprintf("[%s](%s)", item.Title, item.Url) == node.Text {
 				node.Remove()
+				needSave = true
 				break
 			}
 		}
 	}
-	md.Save()
+	if needSave {
+		if err := md.Save(); err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
-func newMarkdown(config map[string]string) Storage {
+func newMarkdown(config map[string]string) (Storage, error) {
 	strg := &markdown{}
-	if value, ok := config["filepath"]; ok {
-		filepath := value
-		file, err := os.Open(filepath)
-		if err != nil {
-			return strg
-		}
-		defer file.Close()
-		bytes, err := ioutil.ReadAll(file)
-		if err != nil {
-			return strg
-		}
+	if filepath, ok := config["filepath"]; ok {
 		strg.filepath = filepath
-		strg.treeRoot = gquery.ParseMarkdown(string(bytes))
+		if err := strg.Load(); err != nil {
+			return nil, err
+		}
 	}
-	return strg
+	return strg, nil
 }

@@ -15,7 +15,10 @@ func TestMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	file.Close()
+	defer func() {
+		file.Close()
+		os.Remove(filepath)
+	}()
 	strg := storage.NewStorage(storage.MarkdownId, config)
 	testData := []storage.Item{
 		{
