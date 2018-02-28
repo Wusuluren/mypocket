@@ -7,8 +7,8 @@ type Item struct {
 }
 
 type Storage interface {
-	Add(items ...Item)
-	Del(items ...Item)
+	Add(items ...Item) error
+	Del(items ...Item) error
 }
 
 const (

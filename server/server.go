@@ -27,11 +27,12 @@ type Config struct {
 var strg storage.Storage
 var config Config
 
-func processBookmark(pWriter *http.ResponseWriter, pRequest **http.Request, processFunc func(node BookmarkNode)) {
-	writer := *pWriter
-	request := *pRequest
+func processBookmark(writer http.ResponseWriter, request *http.Request, processFunc func(node BookmarkNode) error) {
 	defer request.Body.Close()
-
+	if request.Method != "POST" {
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	bytes, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		fmt.Println(err)
@@ -58,14 +59,18 @@ func processBookmark(pWriter *http.ResponseWriter, pRequest **http.Request, proc
 		return
 	}
 	fmt.Println(node)
-	processFunc(node)
+	if err = processFunc(node); err != nil {
+		fmt.Println(err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	writer.WriteHeader(http.StatusOK)
 	writer.Write([]byte("ok"))
 }
 
 func addBookmark(writer http.ResponseWriter, request *http.Request) {
-	processBookmark(&writer, &request, func(node BookmarkNode) {
-		strg.Add(storage.Item{
+	processBookmark(writer, request, func(node BookmarkNode) error {
+		return strg.Add(storage.Item{
 			Title: node.Title,
 			Url:   node.Url,
 		})
@@ -73,8 +78,8 @@ func addBookmark(writer http.ResponseWriter, request *http.Request) {
 }
 
 func removeBookmark(writer http.ResponseWriter, request *http.Request) {
-	processBookmark(&writer, &request, func(node BookmarkNode) {
-		strg.Del(storage.Item{
+	processBookmark(writer, request, func(node BookmarkNode) error {
+		return strg.Del(storage.Item{
 			Title: node.Title,
 			Url:   node.Url,
 		})
@@ -95,19 +100,15 @@ config file like this:
 
 func main() {
 	var err error
-	pConfig := flag.String("config", "", "config file")
+	pConfig := flag.String("config", "config.json", "config file")
 	flag.Parse()
-	if *pConfig != "" {
-		bytes, err := ioutil.ReadFile(*pConfig)
-		if err != nil {
-			panic(err)
-		}
-		err = json.Unmarshal(bytes, &config)
-		if err != nil {
-			panic(err)
-		}
-	} else {
+	bytes, err := ioutil.ReadFile(*pConfig)
+	if err != nil {
 		usage()
+	}
+	err = json.Unmarshal(bytes, &config)
+	if err != nil {
+		panic(err)
 	}
 	if config.Port == 0 {
 		config.Port = 8000

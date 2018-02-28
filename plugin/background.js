@@ -20,17 +20,23 @@ function process(action, tab) {
         var url = config.host + '/' + action
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true)
-        xhr.onreadystatechange = function () {
-            if(xhr.readyState == XMLHttpRequest.DONE) {
-                alert(xhr.status+"("+xhr.statusText+"):"+xhr.responseText)
-            }
-        }
         xhr.send(JSON.stringify({
             "user": config.user,
             "passwd": config.passwd,
             "title":tab.title,
             "url":tab.url
         }))
+        xhr.onreadystatechange = function () {
+            if(xhr.readyState == XMLHttpRequest.DONE) {
+                if (xhr.status==200 || xhr.status==0) {
+                    alert('success')
+                } else {
+                    alert('failed:'+xhr.responseText)
+                }
+            } else {
+                alert('undone')
+            }
+        }
     })
 }
 

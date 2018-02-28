@@ -45,7 +45,7 @@ func (md *markdown) Save() error {
 	return nil
 }
 
-func (md *markdown) Add(items ...Item) {
+func (md *markdown) Add(items ...Item) error {
 	needSave := false
 	for _, item := range items {
 		isFind := false
@@ -67,13 +67,12 @@ func (md *markdown) Add(items ...Item) {
 		}
 	}
 	if needSave {
-		if err := md.Save(); err != nil {
-			fmt.Println(err)
-		}
+		return md.Save()
 	}
+	return nil
 }
 
-func (md *markdown) Del(items ...Item) {
+func (md *markdown) Del(items ...Item) error {
 	needSave := false
 	for _, item := range items {
 		list := md.treeRoot.Children(gquery.MdUnorderList)
@@ -86,10 +85,9 @@ func (md *markdown) Del(items ...Item) {
 		}
 	}
 	if needSave {
-		if err := md.Save(); err != nil {
-			fmt.Println(err)
-		}
+		return md.Save()
 	}
+	return nil
 }
 
 func newMarkdown(config map[string]string) (Storage, error) {
