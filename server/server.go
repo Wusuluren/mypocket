@@ -82,8 +82,7 @@ func removeBookmark(writer http.ResponseWriter, request *http.Request) {
 }
 
 func usage() {
-	fmt.Println(`usage:
-	server -config=[config file]
+	fmt.Println(`Usage:	server -config=[config file]
 config file like this:
 {
   "user": "root",
