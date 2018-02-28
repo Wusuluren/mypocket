@@ -27,8 +27,15 @@ type Config struct {
 var strg storage.Storage
 var config Config
 
+func allowCORS(writer http.ResponseWriter) {
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	writer.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("content-type", "application/json")
+}
+
 func processBookmark(writer http.ResponseWriter, request *http.Request, processFunc func(node BookmarkNode) error) {
 	defer request.Body.Close()
+	allowCORS(writer)
 	if request.Method != "POST" {
 		writer.WriteHeader(http.StatusBadRequest)
 		return

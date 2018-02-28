@@ -33,8 +33,6 @@ function process(action, tab) {
                 } else {
                     alert('failed:'+xhr.responseText)
                 }
-            } else {
-                alert('undone')
             }
         }
     })
