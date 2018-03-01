@@ -49,8 +49,9 @@ func (md *markdown) Add(items ...Item) error {
 	needSave := false
 	for _, item := range items {
 		isFind := false
+		text := fmt.Sprintf("[%s](%s)", item.Title, item.Url)
 		for _, node := range md.treeRoot.Children(gquery.MdUnorderList) {
-			if fmt.Sprintf("[%s](%s)", item.Title, item.Url) == node.Text {
+			if text == node.Text {
 				isFind = true
 				break
 			}
@@ -58,7 +59,7 @@ func (md *markdown) Add(items ...Item) error {
 		if !isFind {
 			md.treeRoot.Append(&gquery.MarkdownNode{
 				Type: gquery.MdUnorderList,
-				Text: fmt.Sprintf("[%s](%s)", item.Title, item.Url),
+				Text: text,
 				Attribute: map[string]string{
 					"tags": strings.Join(item.Tags, ";"),
 				},
@@ -75,9 +76,10 @@ func (md *markdown) Add(items ...Item) error {
 func (md *markdown) Del(items ...Item) error {
 	needSave := false
 	for _, item := range items {
+		text := fmt.Sprintf("[%s](%s)", item.Title, item.Url)
 		list := md.treeRoot.Children(gquery.MdUnorderList)
 		for _, node := range list {
-			if fmt.Sprintf("[%s](%s)", item.Title, item.Url) == node.Text {
+			if text == node.Text {
 				node.Remove()
 				needSave = true
 				break
