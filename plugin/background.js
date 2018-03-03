@@ -28,7 +28,7 @@ function process(action, tab) {
         }))
         xhr.onreadystatechange = function () {
             if(xhr.readyState == XMLHttpRequest.DONE) {
-                if (xhr.status==200 || xhr.status==0) {
+                if (xhr.status==200) {
                     alert('success')
                 } else {
                     alert('failed:'+xhr.responseText)
