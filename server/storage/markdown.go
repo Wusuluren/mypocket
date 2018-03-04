@@ -10,7 +10,7 @@ import (
 
 type markdown struct {
 	filepath string
-	treeRoot *gquery.MarkdownNode
+	gq       *gquery.GqueryMarkdown
 }
 
 func (md *markdown) Load() error {
@@ -20,13 +20,14 @@ func (md *markdown) Load() error {
 		if err != nil {
 			return err
 		}
+		fmt.Println("create file:", md.filepath)
 	}
 	defer file.Close()
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return err
 	}
-	md.treeRoot = gquery.ParseMarkdown(string(bytes))
+	md.gq = gquery.NewMarkdown(string(bytes))
 	return nil
 }
 
@@ -36,8 +37,8 @@ func (md *markdown) Save() error {
 		return err
 	}
 	defer file.Close()
-	for _, node := range md.treeRoot.Children(gquery.MdUnorderList) {
-		_, err := file.WriteString(fmt.Sprintf("- %s\n", node.Text))
+	for _, node := range md.gq.Gquery(gquery.MdUnorderList) {
+		_, err := file.WriteString(fmt.Sprintf("- %s\n", node.Text()))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -50,20 +51,22 @@ func (md *markdown) Add(items ...Item) error {
 	for _, item := range items {
 		isFind := false
 		text := fmt.Sprintf("[%s](%s)", item.Title, item.Url)
-		for _, node := range md.treeRoot.Children(gquery.MdUnorderList) {
-			if text == node.Text {
+		for _, node := range md.gq.Gquery(gquery.MdUnorderList) {
+			if text == node.Text() {
 				isFind = true
 				break
 			}
 		}
 		if !isFind {
-			md.treeRoot.Append(&gquery.MarkdownNode{
-				Type: gquery.MdUnorderList,
-				Text: text,
-				Attribute: map[string]string{
+			conf := map[string]interface{}{
+				"type": gquery.MdUnorderList,
+				"text": text,
+				"attr": map[string]string{
 					"tags": strings.Join(item.Tags, ";"),
 				},
-			})
+			}
+			node := gquery.NewMarkdownNode(conf)
+			md.gq.TreeRoot().Append(node)
 			needSave = true
 		}
 	}
@@ -77,9 +80,9 @@ func (md *markdown) Del(items ...Item) error {
 	needSave := false
 	for _, item := range items {
 		text := fmt.Sprintf("[%s](%s)", item.Title, item.Url)
-		list := md.treeRoot.Children(gquery.MdUnorderList)
+		list := md.gq.Gquery(gquery.MdUnorderList)
 		for _, node := range list {
-			if text == node.Text {
+			if text == node.Text() {
 				node.Remove()
 				needSave = true
 				break

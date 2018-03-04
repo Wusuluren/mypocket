@@ -19,7 +19,10 @@ func TestMarkdown(t *testing.T) {
 		file.Close()
 		os.Remove(filepath)
 	}()
-	strg := storage.NewStorage(storage.MarkdownId, config)
+	strg, err := storage.NewStorage(storage.MarkdownId, config)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testData := []storage.Item{
 		{
 			Title: "baidu",
