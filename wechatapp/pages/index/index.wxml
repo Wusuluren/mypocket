@@ -1,0 +1,22 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="serverinfo">
+    <block wx:if="{{!hasServerInfo}}">
+      <input placeholder="host:port" value="{{serverinfo.url}}" bindinput="bindUrlInput" auto-focus/>
+      <input placeholder="user" value="{{serverinfo.user}}" bindinput="bindUserInput" />
+      <input placeholder="password" value="{{serverinfo.passwd}}" bindinput="bindPasswdInput" />
+      <button bindtap="setServerInfo">保存</button>
+    </block>
+    <block wx:else>
+      <input placeholder="输入网址" bindinput="bindBookmarkInput"  auto-focus/>
+      <button bindtap="onAdd">保存</button>
+      <button bindtap="onRem">删除</button>
+      <block wx:if="{{sendSuccess}}">
+        <icon type="success" size="{{item}}"/>
+      </block>
+      <block wx:else="{{sendSuccess}}">
+        <icon type="cancel" size="{{item}}"/>
+      </block>
+    </block>
+  </view>
+</view>
